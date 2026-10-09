@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% set active='pax' %}
+{% block title %}{{ p['name'] }} &middot; notifications{% endblock %}
+{% block body %}
+<div class="feedhead">
+  <div>
+    <div class="big">{{ f['flight_no'] }}</div>
+    <div class="meta">{{ f['carrier'] }} to {{ f['destination'] }} &middot; Gate {{ f['gate'] }}
+      &middot; {{ f['status'] }}</div>
+  </div>
+  <div class="riskcard">
+    <div class="lab">Your boarding risk</div>
+    <div class="val band {{ risk.band }}">{{ risk.band }}</div>
+  </div>
+</div>
+
+<div class="selrow">
+  <span>Passenger: <b style="color:var(--ink)">{{ p['name'] }}</b></span>
+  <span>Language:
+    <select id="lang" onchange="upd()">
+      {% for code,name in langs.items() %}
+      <option value="{{ code }}" {{ 'selected' if code==p['lang'] }}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </span>
+  <span>Zone (simulated position):
+    <select id="zone" onchange="upd()">
+      {% for z in ['Check-in Hall','Security','Departure Lounge','Food Court','Gate Area','Restroom'] %}
+      <option {{ 'selected' if z==p['zone'] }}>{{ z }}</option>
+      {% endfor %}
+    </select>
+  </span>
+  <a href="{{ url_for('passenger') }}" class="btn ghost" style="margin-left:auto">All passengers</a>
+</div>
+
+<div id="feed"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+var PID={{ p['id'] }};
+function speak(t,lang){
+  if(!('speechSynthesis' in window)){toast('Speech not supported in this browser');return;}
+  var u=new SpeechSynthesisUtterance(t);
+  u.lang={en:'en-NG',pcm:'en-NG',hau:'ha',edo:'en-NG'}[lang]||'en';
+  speechSynthesis.cancel();speechSynthesis.speak(u);
+}
+function render(notes){
+  var f=document.getElementById('feed');
+  if(!notes.length){f.innerHTML='<div class="empty">No notifications yet. '+
+    'When staff act on this flight, your alerts appear here.</div>';return;}
+  f.innerHTML=notes.map(function(n){
+    var lbl=n.event_type.replace(/_/g,' ');
+    return '<div class="note"><button class="btn speak" onclick=\'speak('+
+      JSON.stringify(n.message)+",\""+n.lang+"\")\'>Play</button>"+
+      '<div class="et">'+lbl+'</div><div class="msg">'+n.message+'</div>'+
+      '<div class="mt">Zone: '+n.zone+' &middot; '+n.created_at+'</div></div>';
+  }).join('');
+}
+function poll(){fetch('/api/feed/'+PID).then(r=>r.json()).then(render);}
+function upd(){
+  var fd=new FormData();fd.append('pid',PID);
+  fd.append('lang',document.getElementById('lang').value);
+  fd.append('zone',document.getElementById('zone').value);
+  fetch('/api/update_passenger',{method:'POST',body:fd}).then(r=>r.json()).then(function(){
+    toast('Preferences updated');poll();});
+}
+poll();setInterval(poll,3000);
+</script>
+{% endblock %}

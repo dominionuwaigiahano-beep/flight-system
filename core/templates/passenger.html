@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% set active='pax' %}
+{% block title %}Choose passenger{% endblock %}
+{% block body %}
+<h1>Passenger notifications</h1>
+<p class="sub">Pick a passenger to open their personal notification feed. Each person
+receives only the alerts for their own flight and terminal zone, in their chosen language.</p>
+<div class="grid">
+  {% for p in pax %}
+  <a class="pcard" href="{{ url_for('passenger_feed', pid=p['id']) }}">
+    <div class="pn">{{ p['name'] }}</div>
+    <div class="pm">Zone: {{ p['zone'] }}</div>
+    <span class="pl">{{ langs[p['lang']] }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

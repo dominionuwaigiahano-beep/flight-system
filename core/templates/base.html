@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Flight Notification System{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <div class="brand">
+    <span class="code">BNI</span>
+    <span class="name">Flight Announcement &amp; Passenger Notification System</span>
+  </div>
+  <div class="navlinks">
+    <a href="{{ url_for('passenger') }}" class="{{ 'active' if active=='pax' }}">Passenger</a>
+    {% if session.get('user') %}
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if active=='dash' }}">Console</a>
+      <a href="{{ url_for('logout') }}">Sign out</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="{{ 'active' if active=='login' }}">Staff sign in</a>
+    {% endif %}
+  </div>
+</div></div>
+<div class="wrap">{% block body %}{% endblock %}</div>
+<footer>Prototype using simulated Benin Airport data. Not connected to live airline systems.</footer>
+<div id="toast"></div>
+<script>
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(window._tt);window._tt=setTimeout(function(){t.classList.remove('show')},3200);}
+</script>
+{% block script %}{% endblock %}
+</body>
+</html>

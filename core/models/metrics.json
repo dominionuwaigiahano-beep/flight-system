@@ -1,0 +1,68 @@
+{
+  "missed_boarding": {
+    "model": "Missed-Boarding Risk Model",
+    "n_train": 3000,
+    "n_test": 1000,
+    "accuracy": 0.952,
+    "precision": 0.829,
+    "recall": 0.9143,
+    "f1": 0.8696,
+    "confusion_matrix": [
+      [
+        792,
+        33
+      ],
+      [
+        15,
+        160
+      ]
+    ],
+    "features": [
+      "minutes_to_departure",
+      "checked_in_at_gate",
+      "zone_distance_min",
+      "prior_late_count",
+      "is_frequent_flyer"
+    ],
+    "importances": {
+      "minutes_to_departure": 0.8136,
+      "checked_in_at_gate": 0.0373,
+      "zone_distance_min": 0.0834,
+      "prior_late_count": 0.0482,
+      "is_frequent_flyer": 0.0174
+    }
+  },
+  "flight_delay": {
+    "model": "Flight-Delay Prediction Model",
+    "n_train": 2250,
+    "n_test": 750,
+    "accuracy": 0.7147,
+    "precision": 0.5349,
+    "recall": 0.5948,
+    "f1": 0.5633,
+    "confusion_matrix": [
+      [
+        398,
+        120
+      ],
+      [
+        94,
+        138
+      ]
+    ],
+    "features": [
+      "dep_hour",
+      "carrier_idx",
+      "weather_bad",
+      "inbound_late",
+      "is_weekend"
+    ],
+    "importances": {
+      "dep_hour": 0.3907,
+      "carrier_idx": 0.1536,
+      "weather_bad": 0.1776,
+      "inbound_late": 0.2401,
+      "is_weekend": 0.0381
+    }
+  }
+}
