@@ -1,82 +1,731 @@
 {% extends "base.html" %}
+
 {% set active='dash' %}
+
 {% block title %}Operations Console{% endblock %}
+
 {% block body %}
+
 <h1>Operations console</h1>
-<p class="sub">Signed in as {{ user }} ({{ role }}). Live departures with per passenger
-missed boarding risk from the model, and delay probability per flight.</p>
+
+<p class="sub">
+  Signed in as {{ user }} ({{ role }}). Live departures with per passenger
+  missed boarding risk from the model, and delay probability per flight.
+</p>
 
 <div class="selrow">
-  <button class="primary" onclick="sendRiskAlerts()">Send pre-emptive alerts to all HIGH risk passengers</button>
-  <span class="summ">The model flags at risk passengers so staff can alert them before the call is lost.</span>
+
+  <button class="primary" onclick="sendRiskAlerts()">
+    Send pre-emptive alerts to all HIGH risk passengers
+  </button>
+
+  <span class="summ">
+    The model flags at risk passengers so staff can alert them before the call is lost.
+  </span>
+
 </div>
 
 {% for d in data %}
+
 <div class="flight">
+
   <div class="flight-head">
-    <span class="flight-no">{{ d.flight.flight_no }}</span>
-    <span class="route">{{ d.flight.carrier }} <span class="arrow">&rsaquo;</span> {{ d.flight.destination }}</span>
-    {% if d.flight.status=='Boarding' %}<span class="chip board">Boarding</span>
-    {% elif d.flight.status=='Delayed' %}<span class="chip delay">Delayed {{ d.flight.delay_mins }}m</span>
-    {% elif d.flight.status=='Final Call' %}<span class="chip final">Final call</span>
-    {% else %}<span class="chip">Scheduled</span>{% endif %}
+
+    <span class="flight-no">
+      {{ d.flight.flight_no }}
+    </span>
+
+    <span class="route">
+      {{ d.flight.carrier }}
+      <span class="arrow">&rsaquo;</span>
+      {{ d.flight.destination }}
+    </span>
+
+    {% if d.flight.status == 'Boarding' %}
+
+      <span class="chip board">
+        Boarding
+      </span>
+
+    {% elif d.flight.status == 'Delayed' %}
+
+      <span class="chip delay">
+        Delayed {{ d.flight.delay_mins }}m
+      </span>
+
+    {% elif d.flight.status == 'Final Call' %}
+
+      <span class="chip final">
+        Final call
+      </span>
+
+    {% else %}
+
+      <span class="chip">
+        Scheduled
+      </span>
+
+    {% endif %}
+
     <span class="spacer"></span>
-    <span class="delayprob">Delay probability <b>{{ (d.delay.delay_prob*100)|round|int }}%</b></span>
-    <span class="gate">Gate <b>{{ d.flight.gate }}</b></span>
+
+    <span class="delayprob">
+      Delay probability
+      <b>{{ (d.delay.delay_prob * 100)|round|int }}%</b>
+    </span>
+
+    <span class="gate">
+      Gate <b>{{ d.flight.gate }}</b>
+    </span>
+
   </div>
+
 
   <table class="pax">
-    <tr><th>Passenger</th><th>Language</th><th>Zone</th><th>Gate check in</th>
-        <th>Departs</th><th>Missed boarding risk</th></tr>
-    {% for p in d.pax %}
+
     <tr>
-      <td>{{ p.name }}</td>
-      <td class="flag">{{ p.lang }}</td>
-      <td class="flag">{{ p.zone }}</td>
-      <td>{% if p.checked_in %}<span class="checked">checked in</span>
-          {% else %}<span class="notchecked">not yet</span>{% endif %}</td>
-      <td class="mono">{{ p.mins }}m</td>
-      <td>
-        <span class="riskbar"><i style="width:{{ (p.risk*100)|round|int }}%;
-          background:{% if p.band=='HIGH' %}var(--high){% elif p.band=='MEDIUM' %}var(--med){% else %}var(--low){% endif %}"></i></span>
-        <span class="band {{ p.band }}">{{ p.band }} {{ (p.risk*100)|round|int }}%</span>
-      </td>
+      <th>Passenger</th>
+      <th>Language</th>
+      <th>Zone</th>
+      <th>Gate check in</th>
+      <th>Departs</th>
+      <th>Missed boarding risk</th>
     </tr>
+
+    {% for p in d.pax %}
+
+    <tr>
+
+      <td>
+        {{ p.name }}
+      </td>
+
+      <td class="flag">
+        {{ p.lang }}
+      </td>
+
+      <td class="flag">
+        {{ p.zone }}
+      </td>
+
+      <td>
+
+        {% if p.checked_in %}
+
+          <span class="checked">
+            checked in
+          </span>
+
+        {% else %}
+
+          <span class="notchecked">
+            not yet
+          </span>
+
+        {% endif %}
+
+      </td>
+
+      <td class="mono">
+        {{ p.mins }}m
+      </td>
+
+      <td>
+
+        <span class="riskbar">
+
+          <i
+            style="width:{{ (p.risk * 100)|round|int }}%;
+            background:{% if p.band == 'HIGH' %}var(--high){% elif p.band == 'MEDIUM' %}var(--med){% else %}var(--low){% endif %}">
+          </i>
+
+        </span>
+
+        <span class="band {{ p.band }}">
+          {{ p.band }} {{ (p.risk * 100)|round|int }}%
+        </span>
+
+      </td>
+
+    </tr>
+
     {% endfor %}
+
   </table>
 
+
   <div class="controls">
+
     <span class="summ" style="margin-right:auto">
-      <b>{{ d.high }}</b> passenger(s) at HIGH risk on this flight</span>
-    <button onclick="fire({{ d.flight.id }},'boarding_open')">Open boarding</button>
-    <button onclick="fire({{ d.flight.id }},'final_call')">Final call</button>
-    <button onclick="fire({{ d.flight.id }},'delay')">Announce delay</button>
-    <button onclick="gateChange({{ d.flight.id }})">Gate change</button>
+
+      <b>{{ d.high }}</b>
+      passenger(s) at HIGH risk on this flight
+
+    </span>
+
+
+    <!-- TARGET ZONE -->
+
+    <select
+      id="zone-{{ d.flight.id }}"
+      class="zone-select"
+    >
+
+      <option value="">
+        Select target zone
+      </option>
+
+      <option value="Check-in Hall">
+        Check-in Hall
+      </option>
+
+      <option value="Security">
+        Security
+      </option>
+
+      <option value="Departure Lounge">
+        Departure Lounge
+      </option>
+
+      <option value="Food Court">
+        Food Court
+      </option>
+
+      <option value="Gate Area">
+        Gate Area
+      </option>
+
+      <option value="Restroom">
+        Restroom
+      </option>
+
+    </select>
+
+
+    <!-- BOARDING -->
+
+    <button
+      onclick="fire({{ d.flight.id }}, 'boarding_open')"
+    >
+      Open boarding
+    </button>
+
+
+    <!-- FINAL CALL -->
+
+    <button
+      onclick="fire({{ d.flight.id }}, 'final_call')"
+    >
+      Final call
+    </button>
+
+
+    <!-- DELAY -->
+
+    <button
+      onclick="fire({{ d.flight.id }}, 'delay')"
+    >
+      Announce delay
+    </button>
+
+
+    <!-- GATE CHANGE -->
+
+    <button
+      onclick="gateChange({{ d.flight.id }})"
+    >
+      Gate change
+    </button>
+
+
+    <!-- TERMINAL ANNOUNCEMENT -->
+
+    <button
+      onclick="terminalAnnouncement({{ d.flight.id }}, 'boarding_open')"
+    >
+      🔊 Terminal Announcement
+    </button>
+
   </div>
+
 </div>
+
 {% endfor %}
+
 {% endblock %}
 
+
 {% block script %}
+
 <script>
-function fire(fid,ev){
-  var fd=new FormData();fd.append('flight_id',fid);fd.append('event_type',ev);
-  fetch('{{ url_for("fire_event") }}',{method:'POST',body:fd}).then(r=>r.json()).then(j=>{
-    if(j.ok) toast('Sent '+j.notified+' targeted notifications for '+j.flight+' ('+ev.replace('_',' ')+')');
-    else toast('Error: '+(j.error||'failed'));
+
+
+/* =========================================================
+   SEND FLIGHT EVENT
+   ========================================================= */
+
+function fire(fid, ev) {
+
+  var zoneSelect = document.getElementById('zone-' + fid);
+
+  var zone = zoneSelect.value;
+
+
+  if (!zone) {
+
+    toast('Please select a target zone first');
+
+    return;
+
+  }
+
+
+  var fd = new FormData();
+
+
+  fd.append('flight_id', fid);
+
+  fd.append('event_type', ev);
+
+  fd.append('zone', zone);
+
+
+  fetch('{{ url_for("fire_event") }}', {
+
+    method: 'POST',
+
+    body: fd
+
+  })
+
+  .then(function(response) {
+
+    return response.json();
+
+  })
+
+  .then(function(result) {
+
+    if (result.ok) {
+
+      toast(
+        'Sent ' +
+        result.notified +
+        ' targeted notification(s) to ' +
+        zone +
+        ' for ' +
+        result.flight
+      );
+
+    }
+
+    else {
+
+      toast(
+        'Error: ' +
+        (result.error || 'Failed to send notification')
+      );
+
+    }
+
+  })
+
+  .catch(function(error) {
+
+    console.error(
+      'Notification error:',
+      error
+    );
+
+    toast(
+      'An error occurred while sending the notification'
+    );
+
   });
+
 }
-function gateChange(fid){
-  var g=prompt('New gate number?');if(!g)return;
-  var fd=new FormData();fd.append('flight_id',fid);fd.append('event_type','gate_change');fd.append('newgate',g);
-  fetch('{{ url_for("fire_event") }}',{method:'POST',body:fd}).then(r=>r.json()).then(j=>{
-    if(j.ok){toast('Gate change sent to '+j.notified+' passengers');setTimeout(()=>location.reload(),1200);}
+
+
+/* =========================================================
+   GATE CHANGE
+   ========================================================= */
+
+function gateChange(fid) {
+
+  var newGate = prompt(
+    'New gate number?'
+  );
+
+
+  if (!newGate) {
+
+    return;
+
+  }
+
+
+  var fd = new FormData();
+
+
+  fd.append(
+    'flight_id',
+    fid
+  );
+
+  fd.append(
+    'event_type',
+    'gate_change'
+  );
+
+  fd.append(
+    'newgate',
+    newGate
+  );
+
+
+  fetch('{{ url_for("fire_event") }}', {
+
+    method: 'POST',
+
+    body: fd
+
+  })
+
+  .then(function(response) {
+
+    return response.json();
+
+  })
+
+  .then(function(result) {
+
+    if (result.ok) {
+
+      toast(
+        'Gate change sent to ' +
+        result.notified +
+        ' passenger(s)'
+      );
+
+
+      setTimeout(function() {
+
+        location.reload();
+
+      }, 1200);
+
+    }
+
+    else {
+
+      toast(
+        'Error: ' +
+        (result.error || 'Failed to change gate')
+      );
+
+    }
+
+  })
+
+  .catch(function(error) {
+
+    console.error(
+      'Gate change error:',
+      error
+    );
+
+    toast(
+      'An error occurred while changing the gate'
+    );
+
   });
+
 }
-function sendRiskAlerts(){
-  fetch('{{ url_for("send_risk_alerts") }}',{method:'POST'}).then(r=>r.json()).then(j=>{
-    toast('Pre-emptive risk alerts sent to '+j.alerts+' high risk passenger(s)');
+
+
+/* =========================================================
+   SEND HIGH-RISK ALERTS
+   ========================================================= */
+
+function sendRiskAlerts() {
+
+  fetch(
+    '{{ url_for("send_risk_alerts") }}',
+    {
+      method: 'POST'
+    }
+  )
+
+  .then(function(response) {
+
+    return response.json();
+
+  })
+
+  .then(function(result) {
+
+    if (result.ok) {
+
+      toast(
+        'Pre-emptive risk alerts sent to ' +
+        result.alerts +
+        ' high risk passenger(s)'
+      );
+
+    }
+
+    else {
+
+      toast(
+        'Error: ' +
+        (result.error || 'Failed to send risk alerts')
+      );
+
+    }
+
+  })
+
+  .catch(function(error) {
+
+    console.error(
+      'Risk alert error:',
+      error
+    );
+
+    toast(
+      'An error occurred while sending risk alerts'
+    );
+
   });
+
 }
+
+
+/* =========================================================
+   TERMINAL ANNOUNCEMENT
+   ========================================================= */
+
+function terminalAnnouncement(fid, ev) {
+
+  var zoneSelect =
+    document.getElementById('zone-' + fid);
+
+
+  var zone =
+    zoneSelect.value;
+
+
+  if (!zone) {
+
+    toast(
+      'Please select a target zone first'
+    );
+
+    return;
+
+  }
+
+
+  var fd =
+    new FormData();
+
+
+  fd.append(
+    'flight_id',
+    fid
+  );
+
+  fd.append(
+    'event_type',
+    ev
+  );
+
+  fd.append(
+    'zone',
+    zone
+  );
+
+
+  fetch(
+    '{{ url_for("fire_event") }}',
+    {
+      method: 'POST',
+      body: fd
+    }
+  )
+
+  .then(function(response) {
+
+    return response.json();
+
+  })
+
+  .then(function(result) {
+
+
+    if (!result.ok) {
+
+      toast(
+        'Error: ' +
+        (result.error ||
+        'Failed to generate announcement')
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * The Flask server returns the generated
+     * announcement text.
+     *
+     * The browser then speaks that text using
+     * its built-in speech synthesis.
+     */
+
+
+    var message =
+      result.message || '';
+
+
+    if (!message) {
+
+      toast(
+        'Announcement created, but no announcement text was returned'
+      );
+
+      return;
+
+    }
+
+
+    if (
+      !('speechSynthesis' in window)
+    ) {
+
+      toast(
+        'Speech synthesis is not supported by this browser'
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * Stop any previous announcement.
+     */
+
+    window.speechSynthesis.cancel();
+
+
+    /*
+     * Create the spoken announcement.
+     */
+
+    var utterance =
+      new SpeechSynthesisUtterance(
+        message
+      );
+
+
+    /*
+     * Nigerian English voice.
+     */
+
+    utterance.lang =
+      'en-NG';
+
+
+    /*
+     * Make the announcement sound
+     * natural and clear.
+     */
+
+    utterance.rate =
+      0.9;
+
+    utterance.pitch =
+      1.0;
+
+    utterance.volume =
+      1.0;
+
+
+    /*
+     * Announcement started.
+     */
+
+    utterance.onstart =
+      function() {
+
+        toast(
+          '🔊 Terminal announcement playing...'
+        );
+
+      };
+
+
+    /*
+     * Announcement finished.
+     */
+
+    utterance.onend =
+      function() {
+
+        toast(
+          'Terminal announcement completed'
+        );
+
+      };
+
+
+    /*
+     * Speech error.
+     */
+
+    utterance.onerror =
+      function(error) {
+
+        console.error(
+          'Speech synthesis error:',
+          error
+        );
+
+        toast(
+          'Announcement created, but voice playback failed'
+        );
+
+      };
+
+
+    /*
+     * Play announcement.
+     */
+
+    window.speechSynthesis.speak(
+      utterance
+    );
+
+  })
+
+  .catch(function(error) {
+
+    console.error(
+      'Terminal announcement error:',
+      error
+    );
+
+    toast(
+      'An error occurred while making the announcement'
+    );
+
+  });
+
+}
+
+
 </script>
+
 {% endblock %}
